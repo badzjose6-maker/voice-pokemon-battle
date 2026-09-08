@@ -1,315 +1,235 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voice Pokémon Battle</title>
-
-<style>
-*{box-sizing:border-box}
-
-body{
-    margin:0;
-    font-family:Arial,sans-serif;
-    background:#111827;
-    color:white;
-    text-align:center;
-}
-
-.game{
-    max-width:520px;
-    margin:auto;
-    padding:15px;
-}
-
-h1{font-size:24px}
-
-.arena{
-    background:linear-gradient(#7dd3fc 0%,#dbeafe 58%,#86efac 59%);
-    border-radius:20px;
-    padding:18px;
-    min-height:430px;
-    color:#111;
-}
-
-.status{
-    background:#ffffffdd;
-    border-radius:15px;
-    padding:10px;
-    width:80%;
-    margin:auto;
-    font-weight:bold;
-}
-
-.hp{
-    height:15px;
-    background:#374151;
-    border-radius:10px;
-    overflow:hidden;
-    margin-top:6px;
-}
-
-.bar{
-    height:100%;
-    background:#22c55e;
-    width:100%;
-    transition:.4s;
-}
-
-.monster{
-    font-size:90px;
-    margin:10px;
-    transition:.25s;
-}
-
-.attack{
-    animation:attack .35s;
-}
-
-@keyframes attack{
-    50%{transform:translateX(35px) scale(1.15)}
-}
-
-button{
-    border:0;
-    border-radius:14px;
-    padding:14px 18px;
-    margin:5px;
-    font-size:16px;
-    font-weight:bold;
-}
-
-.voice{
-    background:#f59e0b;
-    color:#111;
-    width:90%;
-    font-size:18px;
-}
-
-#message{
-    min-height:55px;
-    padding:10px;
-    font-weight:bold;
-}
-</style>
-</head>
-
-<body>
-
-<div class="game">
-
-<h1>⚡ VOICE BATTLE ⚡</h1>
-
-<div class="arena">
-
-<!-- ENEMY -->
-<div class="status">
-🔥 CHARIZARD
-<div class="hp">
-<div id="enemyBar" class="bar"></div>
-</div>
-<span id="enemyHP">120 / 120</span>
-</div>
-
-<div id="enemy" class="monster">🔥🐉</div>
-
-<!-- PLAYER -->
-<div id="player" class="monster">⚡🐭</div>
-
-<div class="status">
-⚡ PIKACHU
-<div class="hp">
-<div id="playerBar" class="bar"></div>
-</div>
-<span id="playerHP">120 / 120</span>
-</div>
-
-</div>
-
-<div id="message">
-Say: “Pikachu, use Thunderbolt!”
-</div>
-
-<button class="voice" onclick="voiceCommand()">
-🎤 VOICE COMMAND
-</button>
-
-<br>
-
-<button onclick="attack('Thunderbolt',32)">
-⚡ Thunderbolt
-</button>
-
-<button onclick="attack('Quick Attack',20)">
-💨 Quick Attack
-</button>
-
-<br>
-
-<button onclick="restart()">
-🔄 Restart Battle
-</button>
-
-</div>
-
 <script>
-
 let playerHP=120;
 let enemyHP=120;
 let busy=false;
 
 function update(){
-
-document.getElementById("playerHP").textContent =
-playerHP+" / 120";
-
-document.getElementById("enemyHP").textContent =
-enemyHP+" / 120";
-
-document.getElementById("playerBar").style.width =
-(playerHP/120*100)+"%";
-
-document.getElementById("enemyBar").style.width =
-(enemyHP/120*100)+"%";
-
+  document.getElementById("playerHP").textContent=playerHP+" / 120";
+  document.getElementById("enemyHP").textContent=enemyHP+" / 120";
+  document.getElementById("playerBar").style.width=(playerHP/120*100)+"%";
+  document.getElementById("enemyBar").style.width=(enemyHP/120*100)+"%";
 }
 
 function message(text){
-
-document.getElementById("message").textContent=text;
-
+  document.getElementById("message").textContent=text;
 }
 
 function attack(move,damage){
+  if(busy || playerHP<=0 || enemyHP<=0)return;
 
-if(busy || playerHP<=0 || enemyHP<=0)return;
+  busy=true;
 
-busy=true;
+  const player=document.getElementById("player");
+  player.classList.remove("attack");
+  void player.offsetWidth;
+  player.classList.add("attack");
 
-const player=document.getElementById("player");
+  enemyHP=Math.max(0,enemyHP-damage);
+  update();
 
-player.classList.remove("attack");
+  message("⚡ Pikachu used "+move+"! "+damage+" damage!");
 
-void player.offsetWidth;
+  if(enemyHP===0){
+    message("🏆 Charizard fainted! YOU WIN!");
+    busy=false;
+    return;
+  }
 
-player.classList.add("attack");
-
-enemyHP=Math.max(0,enemyHP-damage);
-
-update();
-
-message("⚡ Pikachu used "+move+"! "+damage+" damage!");
-
-if(enemyHP===0){
-
-message("🏆 Charizard fainted! YOU WIN!");
-
-return;
-
-}
-
-setTimeout(enemyAttack,900);
-
+  setTimeout(enemyAttack,900);
 }
 
 function enemyAttack(){
+  const damage=18;
 
-const damage=18;
+  playerHP=Math.max(0,playerHP-damage);
+  update();
 
-playerHP=Math.max(0,playerHP-damage);
+  message("🔥 Charizard used Ember! "+damage+" damage!");
 
-update();
+  if(playerHP===0){
+    message("💀 Pikachu fainted! YOU LOSE!");
+    return;
+  }
 
-message("🔥 Charizard used Ember! "+damage+" damage!");
-
-if(playerHP===0){
-
-message("💀 Pikachu fainted! YOU LOSE!");
-
-return;
-
+  busy=false;
 }
 
-busy=false;
+async function voiceCommand(){
 
+  const SpeechRecognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
+  if(!SpeechRecognition){
+    message("❌ Speech recognition is not supported by this browser.");
+    return;
+  }
+
+  message("🎤 Checking voice system...");
+
+  try{
+
+    /*
+      Try on-device recognition first.
+      This is only available in browsers that support
+      the newer on-device Web Speech API.
+    */
+
+    if(
+      typeof SpeechRecognition.available === "function" &&
+      typeof SpeechRecognition.install === "function"
+    ){
+
+      let status =
+        await SpeechRecognition.available({
+          langs:["en-US"],
+          processLocally:true,
+          quality:"command"
+        });
+
+      if(status==="downloadable" || status==="downloading"){
+
+        message("📥 Installing English voice pack...");
+
+        const installed =
+          await SpeechRecognition.install({
+            langs:["en-US"],
+            quality:"command"
+          });
+
+        if(!installed){
+          message("❌ Voice language pack could not be installed.");
+          return;
+        }
+
+        message("✅ Voice pack installed. Tap 🎤 again.");
+        return;
+      }
+
+      if(status==="unavailable"){
+        message("⚠️ On-device voice unavailable. Trying online recognition...");
+      }
+    }
+
+    startRecognition(SpeechRecognition);
+
+  }catch(error){
+
+    message("⚠️ Voice setup error: "+error.name);
+
+  }
 }
 
-function voiceCommand(){
+function startRecognition(SpeechRecognition){
 
-if(!('webkitSpeechRecognition' in window) &&
-   !('SpeechRecognition' in window)){
+  const recognition=new SpeechRecognition();
 
-message("🎤 Voice recognition isn't supported by this browser.");
+  recognition.lang="en-US";
+  recognition.continuous=false;
+  recognition.interimResults=false;
+  recognition.maxAlternatives=3;
 
-return;
+  /*
+    Try local processing if supported.
+  */
 
-}
+  try{
+    if("processLocally" in recognition){
+      recognition.processLocally=true;
+    }
+  }catch(e){
+    recognition.processLocally=false;
+  }
 
-const SpeechRecognition =
-window.SpeechRecognition ||
-window.webkitSpeechRecognition;
+  message("🎤 LISTENING... Say Thunderbolt!");
 
-const recognition=new SpeechRecognition();
+  recognition.onstart=function(){
+    message("🎤 I'm listening...");
+  };
 
-recognition.lang="en-US";
-recognition.interimResults=false;
-recognition.maxAlternatives=1;
+  recognition.onspeechstart=function(){
+    message("👂 I hear you...");
+  };
 
-message("🎤 Listening...");
+  recognition.onresult=function(event){
 
-recognition.onresult=function(event){
+    let text="";
 
-const text=
-event.results[0][0].transcript.toLowerCase();
+    for(let i=0;i<event.results.length;i++){
+      text += event.results[i][0].transcript+" ";
+    }
 
-if(text.includes("thunderbolt")){
+    text=text.toLowerCase().trim();
 
-attack("Thunderbolt",32);
+    message("🗣️ Heard: "+text);
 
-}
+    if(
+      text.includes("thunderbolt") ||
+      text.includes("thunder bolt")
+    ){
+      setTimeout(()=>{
+        attack("Thunderbolt",32);
+      },500);
+      return;
+    }
 
-else if(
-text.includes("quick attack") ||
-text.includes("quick")
-){
+    if(
+      text.includes("quick attack") ||
+      text.includes("quick")
+    ){
+      setTimeout(()=>{
+        attack("Quick Attack",20);
+      },500);
+      return;
+    }
 
-attack("Quick Attack",20);
+    message("🤔 I heard \""+text+"\" but don't know that command.");
+  };
 
-}
+  recognition.onerror=function(event){
 
-else{
+    let error=event.error;
 
-message("I heard: \""+text+"\". Try saying Thunderbolt.");
+    if(error==="no-speech"){
+      message("🔇 No speech detected. Tap 🎤 and speak again.");
+    }
+    else if(error==="not-allowed"){
+      message("🚫 Microphone permission was denied.");
+    }
+    else if(error==="network"){
+      message("🌐 Speech service/network error.");
+    }
+    else if(error==="language-not-supported"){
+      message("🌐 English voice recognition isn't supported.");
+    }
+    else{
+      message("⚠️ Voice error: "+error);
+    }
+  };
 
-}
+  recognition.onend=function(){
+    console.log("Voice recognition ended.");
+  };
 
-};
-
-recognition.onerror=function(){
-
-message("🎤 I couldn't hear you. Try again.");
-
-};
-
-recognition.start();
-
+  try{
+    recognition.start();
+  }catch(error){
+    message("⚠️ Could not start microphone: "+error.name);
+  }
 }
 
 function restart(){
 
-playerHP=120;
-enemyHP=120;
-busy=false;
+  playerHP=120;
+  enemyHP=120;
+  busy=false;
 
-update();
+  update();
 
-message("Battle restarted! Say “Pikachu, use Thunderbolt!”");
-
+  message(
+    "Battle restarted! Say “Pikachu, use Thunderbolt!”"
+  );
 }
 
 update();
-
 </script>
-
-</body>
-  </html>
